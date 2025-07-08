@@ -1,42 +1,56 @@
 name: Build RimWorld Mod DLL
 
+################################################################################
+# Global settings – adjust only if your folder names change
+################################################################################
 env:
-  # Folder that contains your .csproj (now at the repo root)
-  MOD_SRC_PATH: Source/1.6
-  # Where the DLL ends up after the Release build
-  DLL_OUT_PATH: Source/1.6/bin/Release
-  ARTIFACT_NAME: MyMenuButtonModDLL
+  MOD_SRC_PATH: Source/1.6           # folder that contains the .csproj
+  DLL_OUT_PATH: 1.6/Assemblies       # where we’ll place the built DLL
+  ARTIFACT_NAME: MyMenuButtonModDLL  # name shown in the Actions UI
 
-
+################################################################################
+# Run on every push (main/master) and on PRs; ignore README tweaks
+################################################################################
 on:
   push:
-    branches: [ master, main ]
+    branches: [ main, master ]
     paths-ignore:
       - "README.md"
   pull_request:
 
+################################################################################
+# Build job (Windows runner gives us .NET Framework reference packs)
+################################################################################
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
+      # 1) Pull repo
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # 2) Install .NET SDK 8 (includes older reference packs like net472)
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
+      # 3) Restore NuGet packages
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
+      # 4) Build in Release mode, but copy the DLL directly to 1.6/Assemblies/
       - name: Build (Release)
-        run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
+        run: >
+          dotnet build "${{ env.MOD_SRC_PATH }}"
+          --configuration Release
+          --no-restore
+          /p:OutDir=$(ProjectDir)..\\..\\Assemblies\\
 
-      - name: Upload DLL artifact
+      # 5) Make the DLL available as an artifact
+      - name: Upload compiled DLL
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: |
-            ${{ env.DLL_OUT_PATH }}/**/*.dll
+          path: ${{ env.DLL_OUT_PATH }}/*.dll
