@@ -1,8 +1,10 @@
 name: Build RimWorld Mod DLL
 
 env:
-  MOD_SRC_PATH: MyMenuButtonMod/Source/1.6
-  DLL_OUT_PATH: MyMenuButtonMod/1.6/Assemblies
+  # Folder that contains your .csproj (now at the repo root)
+  MOD_SRC_PATH: Source/1.6
+  # Where the DLL ends up after the Release build
+  DLL_OUT_PATH: Source/1.6/bin/Release
   ARTIFACT_NAME: MyMenuButtonModDLL
 
 on:
@@ -12,14 +14,9 @@ on:
       - "README.md"
   pull_request:
 
-
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ windows-latest ]
+    runs-on: windows-latest
 
     steps:
       - name: Check out repository
@@ -33,12 +30,12 @@ jobs:
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      - name: Build
+      - name: Build (Release)
         run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
 
-      - name: Upload artifact
+      - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: |
-            ${{ env.DLL_OUT_PATH }}/*.dll
+            ${{ env.DLL_OUT_PATH }}/**/*.dll
