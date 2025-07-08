@@ -1,0 +1,51 @@
+name: Unzip mod into repo root
+
+on:
+  push:
+    branches: [ main ]        # run when you push to main
+  workflow_dispatch:          # …and allow manual runs from the Actions tab
+
+env:
+  ZIP_FILE: MyMenuButtonMod_OnlineRef.zip
+  WRAPPER_DIR: MyMenuButtonMod   # top-level folder *inside* the zip
+  GIT_USER: github-actions[bot]
+  GIT_EMAIL: action@github.com
+
+jobs:
+  unzip_and_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify ZIP exists
+        run: |
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "::error ::$ZIP_FILE not found in repository root."
+            exit 1
+          fi
+
+      - name: Extract ZIP
+        run: unzip -o "$ZIP_FILE"
+
+      - name: Move contents to repo root
+        run: |
+          shopt -s dotglob      # include hidden files like .gitignore
+          mv -f "$WRAPPER_DIR"/* .
+          rmdir "$WRAPPER_DIR"
+
+      - name: Remove ZIP once extracted (optional)
+        run: rm -f "$ZIP_FILE"
+
+      - name: Commit & push if anything changed
+        run: |
+          git config user.name  "${GIT_USER}"
+          git config user.email "${GIT_EMAIL}"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Extract mod contents from $ZIP_FILE"
+            git push
+          fi
