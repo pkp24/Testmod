@@ -1,16 +1,15 @@
 name: Build RimWorld Mod DLL
 
 ################################################################################
-# Adjust only if you move folders around
+# Paths – change only if you move folders around
 ################################################################################
 env:
-  MOD_SRC_PATH: Source/1.6            # .csproj lives here
-  DLL_OUT_PATH: 1.6/Assemblies        # final DLL destination (repo-root/1.6/Assemblies)
+  MOD_SRC_PATH: Source/1.6            # folder that contains the .csproj
+  DLL_DEST_PATH: 1.6/Assemblies       # final DLL location (repo-root/1.6/Assemblies)
   ARTIFACT_NAME: MyMenuButtonModDLL
 
-
 ################################################################################
-# Build on pushes and PRs (skip README edits)
+# Run on pushes and PRs (ignore README edits)
 ################################################################################
 on:
   push:
@@ -20,14 +19,14 @@ on:
   pull_request:
 
 ################################################################################
-# Job: compile on Windows and upload the DLL
+# Job: compile on Windows ➜ copy DLL ➜ upload artifact
 ################################################################################
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # 1️⃣ Pull the repo
+      # 1️⃣ Check out code
       - name: Check out repository
         uses: actions/checkout@v4
 
@@ -41,18 +40,24 @@ jobs:
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # 4️⃣ Build in Release mode and copy the DLL to repo-root/1.6/Assemblies/
-      #     NOTE: single quotes so PowerShell passes the $ literally.
+      # 4️⃣ Build in Release mode (standard output path)
       - name: Build (Release)
-        run: >
-          dotnet build "${{ env.MOD_SRC_PATH }}"
-          --configuration Release
-          --no-restore
-          '/p:OutDir=$(ProjectDir)..\..\1.6\Assemblies\'
+        run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
 
-      # 5️⃣ Upload the compiled DLL as a build artifact
+      # 5️⃣ Copy the built DLL(s) into repo-root/1.6/Assemblies/
+      - name: Copy DLL to mod folder
+        shell: pwsh
+        run: |
+          $dest = "$(pwd)/${{ env.DLL_DEST_PATH }}"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Get-ChildItem -Path "${{ env.MOD_SRC_PATH }}\bin\Release" -Filter *.dll -Recurse |
+            Where-Object { $_.FullName -notmatch '\\ref\\' } |           # skip reference DLLs
+            Copy-Item -Destination $dest -Force
+          Write-Host "Copied DLL(s) to $dest"
+
+      # 6️⃣ Upload the DLL(s) as a build artifact
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.DLL_OUT_PATH }}/*.dll
+          path: ${{ env.DLL_DEST_PATH }}/*.dll
