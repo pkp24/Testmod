@@ -10,7 +10,6 @@ namespace MyMenuButtonMod
     public class MainTabWindow_MyMenu : MainTabWindow
     {
         public override Vector2 InitialSize => new Vector2(600f, 480f);
-        public override MainTabWindowAnchor Anchor => MainTabWindowAnchor.Center;
 
         public MainTabWindow_MyMenu()
         {
