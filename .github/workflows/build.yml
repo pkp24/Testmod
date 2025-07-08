@@ -1,16 +1,15 @@
 name: Build RimWorld Mod DLL
 
 ################################################################################
-# Change these only if your folder layout moves
+# Adjust only if you move folders around
 ################################################################################
 env:
-  MOD_SRC_PATH: Source/1.6           # folder with the .csproj
-  DLL_OUT_PATH: Source/1.6/Assemblies  # <-- corrected
+  MOD_SRC_PATH: Source/1.6            # .csproj lives here
+  DLL_OUT_PATH: 1.6/Assemblies        # final DLL destination (repo-root/1.6/Assemblies)
   ARTIFACT_NAME: MyMenuButtonModDLL
 
-
 ################################################################################
-# Build on pushes and pull requests (skip README edits)
+# Build on pushes and PRs (skip README edits)
 ################################################################################
 on:
   push:
@@ -20,34 +19,37 @@ on:
   pull_request:
 
 ################################################################################
-# Compile on Windows (needs .NET Framework ref-packs) and upload the DLL
+# Job: compile on Windows and upload the DLL
 ################################################################################
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
+      # 1️⃣ Pull the repo
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Install .NET SDK 8 (includes .NET Framework ref-packs)
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      # 3️⃣ Restore NuGet packages
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # Build in Release mode and copy DLL to Source/1.6/Assemblies/
+      # 4️⃣ Build in Release mode and copy the DLL to repo-root/1.6/Assemblies/
+      #     NOTE: single quotes so PowerShell passes the $ literally.
       - name: Build (Release)
         run: >
           dotnet build "${{ env.MOD_SRC_PATH }}"
           --configuration Release
           --no-restore
-          '/p:OutDir=$(ProjectDir)..\..\Assemblies\'
+          '/p:OutDir=$(ProjectDir)..\..\1.6\Assemblies\'
 
-
-      # Upload the compiled DLL
+      # 5️⃣ Upload the compiled DLL as a build artifact
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
