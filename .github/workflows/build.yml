@@ -7,6 +7,7 @@ env:
   DLL_OUT_PATH: Source/1.6/bin/Release
   ARTIFACT_NAME: MyMenuButtonModDLL
 
+
 on:
   push:
     branches: [ master, main ]
