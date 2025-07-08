@@ -1,4 +1,3 @@
-\
 using RimWorld;
 using Verse;
 using UnityEngine;
@@ -26,14 +25,16 @@ namespace MyMenuButtonMod
 
         public override void DoWindowContents(Rect inRect)
         {
+            // Title
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, 35f), "My Menu");
 
+            // Body
             Text.Font = GameFont.Small;
             const float topPadding = 40f;
             var viewRect = new Rect(0f, 0f, inRect.width - 20f, 800f);
-            var outRect = new Rect(inRect.x, inRect.y + topPadding,
-                                   inRect.width, inRect.height - topPadding);
+            var outRect  = new Rect(inRect.x, inRect.y + topPadding,
+                                    inRect.width, inRect.height - topPadding);
 
             Widgets.BeginScrollView(outRect, ref scrollPos, viewRect);
 
