@@ -1,22 +1,20 @@
 name: Build RimWorld Mod DLL
 
 ################################################################################
-# Paths – change only if you move folders around
+# Change these only if you move folders around
 ################################################################################
 env:
-  MOD_SRC_PATH: Source/1.6            # folder that contains the .csproj
-  DLL_DEST_PATH: 1.6/Assemblies       # final DLL location (repo-root/1.6/Assemblies)
+  MOD_SRC_PATH: Source/1.6            # .csproj lives here
+  DLL_DEST_PATH: 1.6/Assemblies       # final DLL location in repo root
   ARTIFACT_NAME: MyMenuButtonModDLL
 
-
 ################################################################################
-# Run on pushes and PRs (ignore README edits)
+# Build on pushes & PRs (skip README edits)
 ################################################################################
 on:
   push:
     branches: [ main, master ]
-    paths-ignore:
-      - 'README.md'
+    paths-ignore: [ 'README.md' ]
   pull_request:
 
 ################################################################################
@@ -27,38 +25,47 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1️⃣ Check out code
-      - name: Check out repository
-        uses: actions/checkout@v4
+    # 1️⃣ Pull the repo
+    - name: Check out repository
+      uses: actions/checkout@v4
 
-      # 2️⃣ Install .NET SDK 8 (includes .NET Framework ref-packs)
-      - name: Set up .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+    # 2️⃣ Install .NET SDK 8 (includes .NET Framework reference packs)
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      # 3️⃣ Restore NuGet packages
-      - name: Restore packages
-        run: dotnet restore "${{ env.MOD_SRC_PATH }}"
+    # 3️⃣ Restore NuGet packages
+    - name: Restore packages
+      run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # 4️⃣ Build in Release mode (standard output path)
-      - name: Build (Release)
-        run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
+    # 4️⃣ Build in Release mode (no custom OutDir)
+    - name: Build (Release)
+      run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
 
-      # 5️⃣ Copy the built DLL(s) into repo-root/1.6/Assemblies/
-      - name: Copy DLL to mod folder
-        shell: pwsh
-        run: |
-          $dest = "$(pwd)/${{ env.DLL_DEST_PATH }}"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Get-ChildItem -Path "${{ env.MOD_SRC_PATH }}\bin\Release" -Filter *.dll -Recurse |
-            Where-Object { $_.FullName -notmatch '\\ref\\' } |           # skip reference DLLs
-            Copy-Item -Destination $dest -Force
-          Write-Host "Copied DLL(s) to $dest"
+    # 5️⃣ Locate ALL new DLLs under Source/1.6 (skip reference DLLs) and copy
+    #    them to repo-root/1.6/Assemblies/.
+    - name: Copy DLL to 1.6/Assemblies/
+      shell: pwsh
+      run: |
+        $workspace = "${{ github.workspace }}"
+        $dest      = Join-Path $workspace '${{ env.DLL_DEST_PATH }}'
+        New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
-      # 6️⃣ Upload the DLL(s) as a build artifact
-      - name: Upload DLL artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.DLL_DEST_PATH }}/*.dll
+        $dlls = Get-ChildItem -Path '${{ env.MOD_SRC_PATH }}' -Filter *.dll -Recurse |
+                  Where-Object { $_.FullName -notmatch '\\ref\\' }
+
+        if (-not $dlls) {
+          Write-Error "No DLLs found under $env:MOD_SRC_PATH after build."
+        }
+
+        $dlls | Copy-Item -Destination $dest -Force
+        Write-Host "Copied $($dlls.Count) DLL(s) to $dest"
+        Get-ChildItem $dest
+
+    # 6️⃣ Upload the DLL(s) so you can download them from the Actions run
+    - name: Upload DLL artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ${{ env.DLL_DEST_PATH }}/*.dll
