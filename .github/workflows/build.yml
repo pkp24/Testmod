@@ -1,20 +1,10 @@
 name: Build RimWorld Mod DLL
 
-################################################################################
-# Change these variables to match your folder / project names.
-################################################################################
 env:
-  # Path to the folder (or solution) that contains your .csproj/.sln
-  MOD_SRC_PATH: Source/
-  # Path to the compiled DLL that should be published as an artifact
-  DLL_OUT_PATH: Source/bin/Release/net48
-  # Friendly name for the artifact
-  ARTIFACT_NAME: RimWorldModDLL
+  MOD_SRC_PATH: MyMenuButtonMod/Source/1.6
+  DLL_OUT_PATH: MyMenuButtonMod/1.6/Assemblies
+  ARTIFACT_NAME: MyMenuButtonModDLL
 
-################################################################################
-# Triggers: build on every push to the default branch and on pull-requests,
-#           but ignore simple README tweaks so you aren't burning CI minutes.
-################################################################################
 on:
   push:
     branches: [ master, main ]
@@ -22,10 +12,6 @@ on:
       - "README.md"
   pull_request:
 
-################################################################################
-# One job, Windows runner (needed for .NET Framework targeting packs).
-# If your mod targets .NET 8-only assemblies you can add ubuntu-latest, macOS etc.
-################################################################################
 jobs:
   build:
     name: Build on ${{ matrix.os }}
@@ -35,25 +21,20 @@ jobs:
         os: [ windows-latest ]
 
     steps:
-      # 1) Grab the code
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # 2) Install the .NET SDK (contains .NET Framework 4.8 reference packs)
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
-      # 3) Restore NuGet packages (and your RimWorld reference-assemblies package, if used)
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # 4) Build the mod DLL in Release configuration
       - name: Build
         run: dotnet build "${{ env.MOD_SRC_PATH }}" --configuration Release --no-restore
 
-      # 5) Upload the compiled DLL so you can grab it from the Actions UI
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
