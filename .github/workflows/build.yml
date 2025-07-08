@@ -12,6 +12,7 @@ on:
       - "README.md"
   pull_request:
 
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
