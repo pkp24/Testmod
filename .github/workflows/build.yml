@@ -1,57 +1,58 @@
 name: Build RimWorld Mod DLL
 
 ################################################################################
-# Global settings – adjust only if your folder names change
+# Adjust only if you move folders around
 ################################################################################
 env:
-  MOD_SRC_PATH: Source/1.6           # folder that contains the .csproj
-  DLL_OUT_PATH: 1.6/Assemblies       # where we’ll place the built DLL
-  ARTIFACT_NAME: MyMenuButtonModDLL  # name shown in the Actions UI
-
+  MOD_SRC_PATH: Source/1.6           # contains your .csproj
+  DLL_OUT_PATH: 1.6/Assemblies       # final DLL location after build
+  ARTIFACT_NAME: MyMenuButtonModDLL
 
 ################################################################################
-# Run on every push (main/master) and on PRs; ignore README tweaks
+# Build on every push/PR (skip README tweaks)
 ################################################################################
 on:
   push:
     branches: [ main, master ]
     paths-ignore:
-      - "README.md"
+      - 'README.md'
   pull_request:
 
 ################################################################################
-# Build job (Windows runner gives us .NET Framework reference packs)
+# Job: compile on Windows and upload the DLL
 ################################################################################
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # 1) Pull repo
+      # 1️⃣ Check out code
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # 2) Install .NET SDK 8 (includes older reference packs like net472)
+      # 2️⃣ Install .NET SDK 8 (includes .NET Framework ref-packs)
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: '8.0.x'
 
-      # 3) Restore NuGet packages
+      # 3️⃣ Restore NuGet packages
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # 4) Build in Release mode, but copy the DLL directly to 1.6/Assemblies/
+      # 4️⃣ Build in Release mode and copy the DLL to 1.6/Assemblies/
+      #     NOTE the single quotes around /p:OutDir=… to keep PowerShell
+      #     from expanding $(ProjectDir).
       - name: Build (Release)
         run: >
           dotnet build "${{ env.MOD_SRC_PATH }}"
           --configuration Release
           --no-restore
-          /p:OutDir=$(ProjectDir)..\\..\\Assemblies\\
+          '/p:OutDir=$(ProjectDir)..\..\Assemblies\'
 
-      # 5) Make the DLL available as an artifact
-      - name: Upload compiled DLL
+      # 5️⃣ Upload the built DLL so you can download it from the run
+      - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.DLL_OUT_PATH }}/*.dll
+          path: ${{ env.DLL_OUT_PATH }}\*.dll
