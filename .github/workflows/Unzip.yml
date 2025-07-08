@@ -1,13 +1,17 @@
 name: Unzip mod into repo root
 
+# Grant the default GITHUB_TOKEN write access so the workflow can push commits
+permissions:
+  contents: write
+
 on:
   push:
-    branches: [ main ]        # run when you push to main
-  workflow_dispatch:          # …and allow manual runs from the Actions tab
+    branches: [ main ]         # run automatically on pushes to main
+  workflow_dispatch:           # allow manual runs from the Actions tab
 
 env:
-  ZIP_FILE: MyMenuButtonMod_OnlineRef.zip
-  WRAPPER_DIR: MyMenuButtonMod   # top-level folder *inside* the zip
+  ZIP_FILE: MyMenuButtonMod_OnlineRef.zip  # name of the ZIP in repo root
+  WRAPPER_DIR: MyMenuButtonMod             # top-level folder inside the ZIP
   GIT_USER: github-actions[bot]
   GIT_EMAIL: action@github.com
 
@@ -18,6 +22,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}   # now has write scope
 
       - name: Verify ZIP exists
         run: |
@@ -31,7 +37,7 @@ jobs:
 
       - name: Move contents to repo root
         run: |
-          shopt -s dotglob      # include hidden files like .gitignore
+          shopt -s dotglob          # include hidden files like .gitignore
           mv -f "$WRAPPER_DIR"/* .
           rmdir "$WRAPPER_DIR"
 
@@ -42,10 +48,12 @@ jobs:
         run: |
           git config user.name  "${GIT_USER}"
           git config user.email "${GIT_EMAIL}"
+
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to commit."
-          else
-            git commit -m "Extract mod contents from $ZIP_FILE"
-            git push
+            exit 0
           fi
+
+          git commit -m "Extract mod contents from $ZIP_FILE"
+          git push origin HEAD:${{ github.ref_name }}
