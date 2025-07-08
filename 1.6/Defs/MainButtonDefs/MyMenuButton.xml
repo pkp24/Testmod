@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <MainButtonDef>
+    <defName>MyMenuButton</defName>
+    <label>my menu</label>
+    <description>Open the MyMenu GUI.</description>
+    <workerClass>MainButtonWorker_ToggleTab</workerClass>
+    <tabWindowClass>MyMenuButtonMod.MainTabWindow_MyMenu</tabWindowClass>
+    <order>210</order>
+    <defaultHotKey>Home</defaultHotKey>
+    <validWithoutMap>true</validWithoutMap>
+    <iconPath>UI/Buttons/MainButtons/IconMyMenu</iconPath>
+  </MainButtonDef>
+</Defs>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>My Menu Button Mod</name>
+  <author>YourNameHere</author>
+  <url>https://github.com/YourRepoHere</url>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <packageId>yourname.mymenubuttonmod</packageId>
+  <description>Adds a custom button to the main toolbar that opens a GUI.</description>
+</ModMetaData>
