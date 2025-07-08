@@ -1,15 +1,15 @@
 name: Build RimWorld Mod DLL
 
 ################################################################################
-# Adjust only if you move folders around
+# Change these only if your folder layout moves
 ################################################################################
 env:
-  MOD_SRC_PATH: Source/1.6           # contains your .csproj
-  DLL_OUT_PATH: 1.6/Assemblies       # final DLL location after build
+  MOD_SRC_PATH: Source/1.6           # folder with the .csproj
+  DLL_OUT_PATH: Source/1.6/Assemblies  # <-- corrected
   ARTIFACT_NAME: MyMenuButtonModDLL
 
 ################################################################################
-# Build on every push/PR (skip README tweaks)
+# Build on pushes and pull requests (skip README edits)
 ################################################################################
 on:
   push:
@@ -18,32 +18,26 @@ on:
       - 'README.md'
   pull_request:
 
-
 ################################################################################
-# Job: compile on Windows and upload the DLL
+# Compile on Windows (needs .NET Framework ref-packs) and upload the DLL
 ################################################################################
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # 1️⃣ Check out code
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Install .NET SDK 8 (includes .NET Framework ref-packs)
       - name: Set up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      # 3️⃣ Restore NuGet packages
       - name: Restore packages
         run: dotnet restore "${{ env.MOD_SRC_PATH }}"
 
-      # 4️⃣ Build in Release mode and copy the DLL to 1.6/Assemblies/
-      #     NOTE the single quotes around /p:OutDir=… to keep PowerShell
-      #     from expanding $(ProjectDir).
+      # Build in Release mode and copy DLL to Source/1.6/Assemblies/
       - name: Build (Release)
         run: >
           dotnet build "${{ env.MOD_SRC_PATH }}"
@@ -51,9 +45,10 @@ jobs:
           --no-restore
           '/p:OutDir=$(ProjectDir)..\..\Assemblies\'
 
-      # 5️⃣ Upload the built DLL so you can download it from the run
+
+      # Upload the compiled DLL
       - name: Upload DLL artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.DLL_OUT_PATH }}\*.dll
+          path: ${{ env.DLL_OUT_PATH }}/*.dll
